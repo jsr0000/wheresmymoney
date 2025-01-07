@@ -15,7 +15,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${gantariFont.className}  antialiased`}>
+        className={`${gantariFont.className}`}>
         {children}
       </body>
     </html>

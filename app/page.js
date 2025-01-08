@@ -1,12 +1,11 @@
 "use client";
-
 import React, { useState, useRef } from "react";
 import { Pie } from "react-chartjs-2";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { Gantari } from "next/font/google";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title, DoughnutController } from "chart.js";
+import ChartDataLabels from "chartjs-plugin-datalabels"; // Import the datalabels plugin
 
 // Register Chart.js components
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, Title, DoughnutController, ChartDataLabels);
 
 export default function Home() {
   const scrollToChartRef = useRef(null);
@@ -22,7 +21,7 @@ export default function Home() {
     datasets: [
       {
         data: [],
-        backgroundColor: ["#4BC0C0", "#36A2EB", "#FF6384", "#FFCE56", "#9966FF"],
+        backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"],
         hoverBackgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"],
         borderColor: "#fff",
         borderWidth: 2,
@@ -70,12 +69,24 @@ export default function Home() {
         },
         displayColors: false,
       },
+      datalabels: {
+        display: true,
+        color: "#fff",
+        formatter: (value, context) => {
+          const total = context.chart._metasets[context.datasetIndex].total;
+          const percentage = ((value / total) * 100).toFixed(2);
+          return `${percentage}%`; // Show percentage on each slice
+        },
+        font: {
+          size: 14,
+          weight: "bold",
+        },
+      },
     },
   });
 
-
   const addRow = () => {
-    setInputs([...inputs, { asset: "", quantity: 0 }]);
+    setInputs([...inputs, { asset: "", quantity: "" }]);
   };
 
   const updateInput = (index, field, value) => {
@@ -95,9 +106,7 @@ export default function Home() {
         {
           data,
           backgroundColor: ["#2fe514", "#00813e", "#317a11", "#076438", "#a8f983"],
-          hoverBackgroundColor: [
-            "#dedede"
-          ],
+          hoverBackgroundColor: ["#dedede"],
           borderColor: "#fff",
           borderWidth: 2,
         },
@@ -115,7 +124,7 @@ export default function Home() {
         {/* Left Section: Header */}
         <div className="text-left">
           <h1 className="text-8xl font-bold px-10">Where's Your Money?</h1>
-          <p className="text-gray-500 mt-2 px-10 py-5  text-2xl font-italic">Visualize your savings and investments.</p>
+          <p className="text-gray-500 mt-2 px-10 py-5 text-2xl font-italic">Visualize your savings and investments.</p>
         </div>
 
         {/* Right Section: Input Boxes */}
@@ -156,15 +165,14 @@ export default function Home() {
       </div>
 
       {/* Chart Section */}
-      <div className="pt-20 flex" ref={scrollToChartRef}>
-        <div className="flex pl-20" style={{ width: '50%' }}>
+      <div className="pt-20 flex items-center justify-center" ref={scrollToChartRef}>
+        <div className="flex" style={{ width: "50%" }}>
           <Pie data={chartData} options={chartOptions} />
         </div>
-        <h3 className="text-center text-lg font-semibold mb-4 pl-50 justify-center">
+        <h3 className="text-center text-lg font-semibold mb-4 pl-10">
           Total Quantity: £{totalQuantity.toFixed(2)}
         </h3>
       </div>
     </div>
   );
 }
-

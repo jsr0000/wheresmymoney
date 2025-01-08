@@ -22,8 +22,37 @@ export default function Home() {
       {
         data: [],
         backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"],
+        hoverBackgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"],
+        borderColor: "#fff",
+        borderWidth: 2,
       },
     ],
+  });
+
+  const [chartOptions, setChartOptions] = useState({
+    responsive: true,
+    plugins: {
+      legend: {
+        display: true,
+        position: "top",
+        labels: {
+          color: "#333",
+          font: {
+            size: 14,
+            family: "Arial, sans-serif",
+          },
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        bodyFont: {
+          size: 12,
+        },
+        padding: 10,
+      },
+    },
   });
 
   // Add a new input row
@@ -50,15 +79,27 @@ export default function Home() {
         {
           data,
           backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"],
+          hoverBackgroundColor: [
+            "#FF6384",
+            "#36A2EB",
+            "#FFCE56",
+            "#4BC0C0",
+            "#9966FF",
+            "#FF9F40",
+          ],
+          borderColor: "#fff",
+          borderWidth: 2,
         },
       ],
     });
   };
 
+  const totalQuantity = inputs.reduce((total, input) => total + (parseFloat(input.quantity) || 0), 0);
+
   return (
     <div>
       <div>
-        <h1 className="flex justify-center pt-40">Asset Tracker</h1>
+        <h1 className="flex justify-center pt-40">Where's Your Money?</h1>
       </div>
       <div className="flex items-center justify-center p-40">
         <button
@@ -96,18 +137,21 @@ export default function Home() {
           </button>
           <button
             onClick={generateChartData}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ml-4"
+            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ml-10"
           >
             Generate Chart
           </button>
         </div>
       </div>
-      <div  className="pt-20">
-        <h2 className="text-center text-xl font-bold mb-4">Pie Chart</h2>
+      <div className="pt-20">
+        <h3 className="text-center text-lg font-semibold mb-4">
+          Total Quantity: £{totalQuantity.toFixed(2)}
+        </h3>
         <div className="flex justify-center">
           <Pie data={chartData} />
         </div>
       </div>
+
     </div>
   );
 }

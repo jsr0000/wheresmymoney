@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useRef } from "react";
 import { Pie } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title, DoughnutController } from "chart.js";
@@ -33,7 +34,7 @@ export default function Home() {
     responsive: true,
     plugins: {
       legend: {
-        display: true,
+        display: false,
         position: "right",
         padding: 10,
         labels: {
@@ -124,7 +125,7 @@ export default function Home() {
         {/* Left Section: Header */}
         <div className="text-left">
           <h1 className="text-8xl font-bold px-10">Where's Your Money?</h1>
-          <p className="text-gray-500 mt-2 px-10 py-5 text-2xl font-italic">Visualize your savings and investments.</p>
+          <p className="text-gray-500 mt-2 px-10 py-5 text-2xl font-italic">Visualize your assets, savings and investments.</p>
         </div>
 
         {/* Right Section: Input Boxes */}
@@ -166,11 +167,11 @@ export default function Home() {
 
       {/* Chart Section */}
       <div className="pt-20 flex items-center justify-center" ref={scrollToChartRef}>
-        <div className="flex" style={{ width: "50%" }}>
+        <div className="flex pr-10" style={{ width: "50%" }}>
           <Pie data={chartData} options={chartOptions} />
         </div>
-        <h3 className="text-center text-lg font-semibold mb-4 pl-10">
-          Total Quantity: £{totalQuantity.toFixed(2)}
+        <h3 className="text-center text-6xl font-semibold mb-4 pl-10">
+          Total: £{totalQuantity.toFixed(2)}
         </h3>
       </div>
     </div>

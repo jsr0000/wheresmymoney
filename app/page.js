@@ -7,6 +7,7 @@ import {
   LinearScale, BarElement
 } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels"; // Import the datalabels plugin
+import AuthButton from "./components/AuthButton";
 
 // Register Chart.js components
 ChartJS.register(
@@ -74,17 +75,28 @@ export default function Home() {
         },
       },
       tooltip: {
-        backgroundColor: "rgba(0, 0, 0, 0.9)",
-        titleColor: "#fff",
-        bodyColor: "#fff",
-        borderColor: "#2fe514",
+        backgroundColor: "rgba(0, 0, 0, 0.9)", // Dark background
+        titleColor: "#fff", // White title
+        bodyColor: "#fff", // White body text
+        borderColor: "#fff", // White border
         borderWidth: 1,
         bodyFont: {
           size: 14,
-          family: "Gantari",
+          family: "Arial, sans-serif",
         },
-        padding: 12,
-        callbacks: tooltipCallback,
+        padding: 12, // Add some padding
+        callbacks: {
+          label: function (tooltipItem) {
+            // Custom label formatting (remove color box)
+            const value = tooltipItem.raw || 0;
+            return `£${value.toFixed(2)}`;
+          },
+          title: function (tooltipItems) {
+            // Access the first tooltip item and get its label
+            const label = tooltipItems[0]?.label || "Unknown";
+            return label;
+          },
+        },
         displayColors: false,
       },
       datalabels: {
@@ -141,7 +153,16 @@ export default function Home() {
           family: "Gantari",
         },
         padding: 12,
-        callbacks: tooltipCallback,
+        callbacks: {
+          label: function (context) {
+            const value = context.parsed.y || 0;
+            return `£${value.toLocaleString()} 💰`;
+          },
+          title: function (tooltipItems) {
+            const label = tooltipItems[0]?.dataset.label || "Unknown";
+            return label;
+          },
+        },
         displayColors: false,
       },
       datalabels: {
@@ -316,6 +337,7 @@ export default function Home() {
 
   return (
     <div>
+      <AuthButton />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center h-screen px-10">
         {/* Left Section: Header */}
         <div className="text-left">

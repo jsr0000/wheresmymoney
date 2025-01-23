@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Pie, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS, ArcElement, Tooltip, Legend, Title, DoughnutController, CategoryScale,
@@ -31,6 +31,7 @@ export default function Home() {
 
   // State for inputs and chart data
   const [inputs, setInputs] = useState([{ asset: "", quantity: "" }]);
+  const [totalAmount, setTotalAmount] = useState(0);
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [
@@ -133,7 +134,7 @@ export default function Home() {
       },
       title: {
         display: true,
-        text: 'Asset History 📈',
+
         color: "#fff",
         font: {
           size: 24,
@@ -190,7 +191,7 @@ export default function Home() {
         beginAtZero: true,
         title: {
           display: true,
-          text: '💷 Amount in Pounds',
+          text: '💷 Quantity (£)',
           color: "#fff",
           font: {
             size: 16,
@@ -270,6 +271,10 @@ export default function Home() {
     const labels = inputs.map((input) => input.asset);
     const data = inputs.map((input) => parseFloat(input.quantity) || 0);
 
+    // Calculate and update total before resetting inputs
+    const newTotal = data.reduce((sum, value) => sum + value, 0);
+    setTotalAmount(newTotal);
+
     // Update pie chart data
     setChartData({
       labels,
@@ -327,73 +332,103 @@ export default function Home() {
       datasets
     });
 
+    // Reset inputs without losing the total
     setInputs([{ asset: "", quantity: "" }]);
-
 
     handleScrollToChart();
   };
 
-  const totalQuantity = inputs.reduce((total, input) => total + (parseFloat(input.quantity) || 0), 0);
-
   return (
-    <div>
+    <div className="min-h-screen bg-[#171717] text-white">
       <AuthButton />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center h-screen px-10">
-        {/* Left Section: Header */}
-        <div className="text-left">
-          <h1 className="text-8xl font-bold px-10">Where's Your Money?</h1>
-          <p className="text-gray-500 mt-2 px-10 py-5 text-2xl font-italic">Visualize your assets, savings and investments.</p>
-        </div>
 
-        {/* Right Section: Input Boxes */}
-        <div className="space-y-4 p-10">
-          {inputs.map((input, index) => (
-            <div key={index} className="flex gap-10">
-              <input
-                type="text"
-                placeholder="Asset"
-                value={input.asset}
-                onChange={(e) => updateInput(index, "asset", e.target.value)}
-                className="border border-gray-300 rounded px-4 py-2 w-2/3 focus:outline-none focus:ring-2 focus:ring-green-500 text-background"
-              />
-              <input
-                type="number"
-                placeholder="Quantity (£)"
-                value={input.quantity}
-                onChange={(e) => updateInput(index, "quantity", e.target.value)}
-                className="border border-gray-300 rounded px-4 py-2 w-1/3 focus:outline-none focus:ring-2 focus:ring-green-500 text-background"
-              />
+      {/* Hero Section */}
+      <div className="max-w-6xl mx-auto px-6 py-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Left Column - Text */}
+          <div className="space-y-6">
+            <h1 className="text-7xl font-bold">
+              <span className="text-green-500">Track your wealth</span>
+              <br />
+              <span className="text-gray-200">with ease</span>
+            </h1>
+            <p className="text-gray-400 text-xl">
+              Visualize your assets, savings and investments in one place.
+            </p>
+          </div>
+
+          {/* Right Column - Input Form */}
+          <div className="bg-[#232323] p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-shadow duration-300">
+            <div className="space-y-4">
+              {inputs.map((input, index) => (
+                <div key={index} className="flex gap-4">
+                  <input
+                    type="text"
+                    placeholder="Asset Name"
+                    value={input.asset}
+                    onChange={(e) => updateInput(index, "asset", e.target.value)}
+                    className="flex-1 bg-[#2a2a2a] border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 text-white placeholder-gray-500"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Amount (£)"
+                    value={input.quantity}
+                    onChange={(e) => updateInput(index, "quantity", e.target.value)}
+                    className="w-1/3 bg-[#2a2a2a] border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 text-white placeholder-gray-500"
+                  />
+                </div>
+              ))}
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  onClick={addRow}
+                  className="flex-1 bg-[#2a2a2a] text-green-500 border-2 border-green-500 px-6 py-3 rounded-lg hover:bg-green-500 hover:text-white transition-all duration-300 shadow-[0_4px_15px_rgb(0,0,0,0.2)] hover:shadow-[0_4px_15px_rgb(0,0,0,0.3)]"
+                >
+                  Add Asset
+                </button>
+                <button
+                  onClick={generateChartData}
+                  className="flex-1 bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-all duration-300 shadow-[0_4px_15px_rgb(0,0,0,0.2)] hover:shadow-[0_4px_15px_rgb(0,0,0,0.3)]"
+                >
+                  Generate Charts
+                </button>
+              </div>
             </div>
-          ))}
-          <div className="flex gap-4">
-            <button
-              onClick={addRow}
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-            >
-              Add Row
-            </button>
-            <button
-              onClick={generateChartData}
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-            >
-              Generate Chart
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Update Chart Section layout */}
-      <div className="pt-20 flex flex-col items-center justify-center" ref={scrollToChartRef}>
-        <h3 className="text-center text-6xl font-semibold mb-20">
-          Total: £{totalQuantity.toFixed(2)}
-        </h3>
-        <div className="w-1/3 mb-40">
-          <Pie data={chartData} options={chartOptions} />
-        </div>
-        <div className="w-full px-10 mb-10">
-          <Bar data={barChartData} options={barChartOptions} />
+      {/* Charts Section */}
+      {/* {chartsGenerated && ( */}
+      <div className="bg-[#232323] py-16" ref={scrollToChartRef}>
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="text-4xl font-bold text-center mb-12">
+            Total Assets: <span className="text-green-500">£{totalAmount.toFixed(2)}</span>
+          </h2>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Pie Chart - Takes up 1/3 of the space */}
+            <div className="bg-[#2a2a2a] p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-shadow duration-300">
+              <h3 className="text-xl font-semibold mb-6 text-center text-gray-200">Asset Distribution</h3>
+              <div className="w-full max-w-[300px] mx-auto">
+                <Pie data={chartData} options={chartOptions} />
+              </div>
+            </div>
+
+            {/* Bar Chart - Takes up 2/3 of the space */}
+            <div className="lg:col-span-2 bg-[#2a2a2a] p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-shadow duration-300">
+              <h3 className="text-xl font-semibold mb-6 text-center text-gray-200">Asset History 📈</h3>
+              <div className="w-full h-[400px]">
+                <Bar data={barChartData} options={{
+                  ...barChartOptions,
+                  maintainAspectRatio: false
+                }} />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+      {/* )} */}
     </div>
   );
 }

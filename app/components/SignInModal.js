@@ -13,6 +13,7 @@ export default function SignInModal({ isOpen, onClose }) {
     if (!isOpen) return null;
 
     const handleSubmit = async (e) => {
+        
         e.preventDefault();
         try {
             const result = await signIn("credentials", {
@@ -51,6 +52,7 @@ export default function SignInModal({ isOpen, onClose }) {
             {/* Sign-in box */}
             <div
                 className="bg-[#171717] p-8 rounded-lg shadow-xl w-96 text-white relative z-10"
+                onClick={(e) => e.stopPropagation()}
             >
                 <h1 className="text-2xl font-bold mb-6 text-center">Sign In</h1>
 

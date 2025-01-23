@@ -1,12 +1,25 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Pie } from "react-chartjs-2";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title, DoughnutController } from "chart.js";
+import { Pie, Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS, ArcElement, Tooltip, Legend, Title, DoughnutController, CategoryScale,
+  LinearScale, BarElement
+} from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels"; // Import the datalabels plugin
 
 // Register Chart.js components
-ChartJS.register(ArcElement, Tooltip, Legend, Title, DoughnutController, ChartDataLabels);
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  Title,
+  DoughnutController,
+  ChartDataLabels,
+  CategoryScale,    // Register new components
+  LinearScale,
+  BarElement
+);
 
 export default function Home() {
   const scrollToChartRef = useRef(null);
@@ -30,6 +43,21 @@ export default function Home() {
     ],
   });
 
+  // Define a consistent color palette at the top level
+  const greenColors = ["#2fe514", "#00813e", "#317a11", "#076438", "#a8f983"];
+
+  // Create a consistent tooltip callback
+  const tooltipCallback = {
+    label: function (context) {
+      const value = context.raw || context.parsed.y || 0;
+      return `£${value.toLocaleString()} 💰`;
+    },
+    title: function (tooltipItems) {
+      const label = tooltipItems[0]?.dataset?.label || tooltipItems[0]?.label || "Unknown";
+      return label;
+    }
+  };
+
   const [chartOptions, setChartOptions] = useState({
     responsive: true,
     plugins: {
@@ -46,28 +74,17 @@ export default function Home() {
         },
       },
       tooltip: {
-        backgroundColor: "rgba(0, 0, 0, 0.9)", // Dark background
-        titleColor: "#fff", // White title
-        bodyColor: "#fff", // White body text
-        borderColor: "#fff", // White border
+        backgroundColor: "rgba(0, 0, 0, 0.9)",
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        borderColor: "#2fe514",
         borderWidth: 1,
         bodyFont: {
           size: 14,
-          family: "Arial, sans-serif",
+          family: "Gantari",
         },
-        padding: 12, // Add some padding
-        callbacks: {
-          label: function (tooltipItem) {
-            // Custom label formatting (remove color box)
-            const value = tooltipItem.raw || 0;
-            return `£${value.toFixed(2)}`;
-          },
-          title: function (tooltipItems) {
-            // Access the first tooltip item and get its label
-            const label = tooltipItems[0]?.label || "Unknown";
-            return label;
-          },
-        },
+        padding: 12,
+        callbacks: tooltipCallback,
         displayColors: false,
       },
       datalabels: {
@@ -86,6 +103,137 @@ export default function Home() {
     },
   });
 
+  // Add new state for historical data
+  const [historicalData, setHistoricalData] = useState([]);
+
+  // Add state for bar chart
+  const [barChartData, setBarChartData] = useState({
+    labels: [],
+    datasets: []
+  });
+
+  // Update bar chart options to enable stacking
+  const [barChartOptions, setBarChartOptions] = useState({
+    responsive: true,
+    plugins: {
+      legend: {
+        display: false,  // Remove the color key/legend
+      },
+      title: {
+        display: true,
+        text: 'Asset History 📈',
+        color: "#fff",
+        font: {
+          size: 24,
+          family: "Gantari",
+          weight: 'bold'
+        },
+        padding: 20
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.9)",
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        borderColor: "#2fe514",
+        borderWidth: 1,
+        bodyFont: {
+          size: 14,
+          family: "Gantari",
+        },
+        padding: 12,
+        callbacks: tooltipCallback,
+        displayColors: false,
+      },
+      datalabels: {
+        display: true,
+        color: '#fff',
+        anchor: 'center',
+        align: 'center',
+        formatter: function (value, context) {
+          if (value > 0) {
+            return context.dataset.label;  // Show asset name instead of value
+          }
+          return '';  // Don't show label if value is 0
+        },
+        font: {
+          weight: 'bold',
+          size: 13,
+          family: "Gantari",
+        },
+        textShadow: '0 0 3px rgba(0,0,0,0.5)'  // Add text shadow for better readability
+      }
+    },
+    scales: {
+      y: {
+        stacked: true,
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: '💷 Amount in Pounds',
+          color: "#fff",
+          font: {
+            size: 16,
+            family: "Gantari",
+            weight: 'bold'
+          },
+          padding: { top: 20, bottom: 10 }
+        },
+        ticks: {
+          color: "#fff",
+          font: {
+            size: 14,
+            family: "Gantari"
+          },
+          callback: function (value) {
+            return '£' + value.toLocaleString();  // Format numbers with commas
+          },
+          padding: 10
+        },
+        grid: {
+          color: "rgba(255, 255, 255, 0.1)",
+          drawBorder: false,
+        }
+      },
+      x: {
+        stacked: true,
+        title: {
+          display: true,
+          text: '📅 Date',
+          color: "#fff",
+          font: {
+            size: 16,
+            family: "Gantari",
+            weight: 'bold'
+          },
+          padding: { top: 10, bottom: 0 }
+        },
+        ticks: {
+          color: "#fff",
+          font: {
+            size: 14,
+            family: "Gantari"
+          },
+          padding: 10
+        },
+        grid: {
+          display: false  // Remove vertical grid lines
+        }
+      }
+    },
+    animation: {
+      duration: 1500,  // Longer animation
+      easing: 'easeInOutQuart'  // Smoother animation
+    },
+    layout: {
+      padding: {
+        top: 20,
+        right: 20,
+        bottom: 20,
+        left: 20
+      }
+    }
+  });
+
   const addRow = () => {
     setInputs([...inputs, { asset: "", quantity: "" }]);
   };
@@ -101,18 +249,65 @@ export default function Home() {
     const labels = inputs.map((input) => input.asset);
     const data = inputs.map((input) => parseFloat(input.quantity) || 0);
 
+    // Update pie chart data
     setChartData({
       labels,
       datasets: [
         {
           data,
-          backgroundColor: ["#2fe514", "#00813e", "#317a11", "#076438", "#a8f983"],
+          backgroundColor: greenColors,
           hoverBackgroundColor: ["#dedede"],
           borderColor: "#fff",
           borderWidth: 2,
         },
       ],
     });
+
+    // Add new data point to historical data
+    const timestamp = new Date().toLocaleDateString();
+    const newDataPoint = {
+      timestamp,
+      assets: inputs.map(input => ({
+        asset: input.asset,
+        quantity: parseFloat(input.quantity) || 0
+      }))
+    };
+
+    const updatedHistoricalData = [...historicalData, newDataPoint];
+    setHistoricalData(updatedHistoricalData);
+
+    // Create stacked bar chart data
+    const vibrantColors = [
+      "#00ff87",  // Bright mint
+      "#00b894",  // Sea green
+      "#55efc4",  // Light teal
+      "#00cec9",  // Turquoise
+      "#81ecec",  // Light cyan
+      "#74b9ff",  // Sky blue
+      "#32ff7e",  // Lime
+      "#7bed9f"   // Light green
+    ];
+
+    const assets = [...new Set(updatedHistoricalData.flatMap(data =>
+      data.assets.map(asset => asset.asset)
+    ))].filter(asset => asset); // Filter out empty asset names
+
+    const datasets = assets.map((assetName, index) => ({
+      label: assetName,
+      data: updatedHistoricalData.map(dataPoint => {
+        const asset = dataPoint.assets.find(a => a.asset === assetName);
+        return asset ? asset.quantity : 0;
+      }),
+      backgroundColor: greenColors[index % greenColors.length],
+    }));
+
+    setBarChartData({
+      labels: updatedHistoricalData.map(data => data.timestamp),
+      datasets
+    });
+
+    setInputs([{ asset: "", quantity: "" }]);
+
 
     handleScrollToChart();
   };
@@ -165,15 +360,20 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Chart Section */}
-      <div className="pt-20 flex items-center justify-center" ref={scrollToChartRef}>
-        <div className="flex pr-10" style={{ width: "50%" }}>
-          <Pie data={chartData} options={chartOptions} />
-        </div>
-        <h3 className="text-center text-6xl font-semibold mb-4 pl-10">
+      {/* Update Chart Section layout */}
+      <div className="pt-20 flex flex-col items-center justify-center" ref={scrollToChartRef}>
+        <h3 className="text-center text-6xl font-semibold mb-20">
           Total: £{totalQuantity.toFixed(2)}
         </h3>
+        <div className="w-1/3 mb-40">
+          <Pie data={chartData} options={chartOptions} />
+        </div>
+        <div className="w-full px-10 mb-10">
+          <Bar data={barChartData} options={barChartOptions} />
+        </div>
       </div>
     </div>
   );
 }
+
+

@@ -8,6 +8,7 @@ import {
 } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels"; // Import the datalabels plugin
 import AuthButton from "./components/AuthButton";
+import { useSession } from "next-auth/react";
 
 // Register Chart.js components
 ChartJS.register(
@@ -189,6 +190,7 @@ export default function Home() {
       y: {
         stacked: true,
         beginAtZero: true,
+        suggestedMax: 10000,
         title: {
           display: true,
           text: '💷 Quantity (£)',
@@ -207,7 +209,7 @@ export default function Home() {
             family: "Gantari"
           },
           callback: function (value) {
-            return '£' + value.toLocaleString();  // Format numbers with commas
+            return value.toLocaleString();  // Format numbers with commas
           },
           padding: 10
         },
@@ -267,7 +269,44 @@ export default function Home() {
     setInputs(updatedInputs);
   };
 
-  const generateChartData = () => {
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (session) {
+        try {
+          const response = await fetch('/api/assets');
+          const data = await response.json();
+          
+          if (data.length > 0) {
+            // Transform the data to match your state structure
+            const transformedData = data.reduce((acc, asset) => {
+              const date = new Date(asset.timestamp).toLocaleDateString();
+              if (!acc[date]) {
+                acc[date] = [];
+              }
+              acc[date].push({
+                asset: asset.name,
+                quantity: asset.quantity
+              });
+              return acc;
+            }, {});
+
+            setHistoricalData(Object.entries(transformedData).map(([timestamp, assets]) => ({
+              timestamp,
+              assets
+            })));
+          }
+        } catch (error) {
+          console.error('Failed to load user data:', error);
+        }
+      }
+    };
+
+    loadUserData();
+  }, [session]);
+
+  const generateChartData = async () => {
     const labels = inputs.map((input) => input.asset);
     const data = inputs.map((input) => parseFloat(input.quantity) || 0);
 
@@ -336,6 +375,25 @@ export default function Home() {
     setInputs([{ asset: "", quantity: "" }]);
 
     handleScrollToChart();
+
+    if (session) {
+      try {
+        await fetch('/api/assets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            assets: inputs.map(input => ({
+              asset: input.asset,
+              quantity: parseFloat(input.quantity) || 0
+            }))
+          }),
+        });
+      } catch (error) {
+        console.error('Failed to save data:', error);
+      }
+    }
   };
 
   return (
@@ -409,7 +467,7 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Pie Chart - Takes up 1/3 of the space */}
             <div className="bg-[#2a2a2a] p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-shadow duration-300">
-              <h3 className="text-xl font-semibold mb-6 text-center text-gray-200">Asset Distribution</h3>
+              <h3 className="text-3xl font-semibold mb-6 text-center text-gray-200">Asset Distribution</h3>
               <div className="w-full max-w-[300px] mx-auto">
                 <Pie data={chartData} options={chartOptions} />
               </div>
@@ -417,7 +475,7 @@ export default function Home() {
 
             {/* Bar Chart - Takes up 2/3 of the space */}
             <div className="lg:col-span-2 bg-[#2a2a2a] p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-shadow duration-300">
-              <h3 className="text-xl font-semibold mb-6 text-center text-gray-200">Asset History 📈</h3>
+              <h3 className="text-3xl font-semibold mb-6 text-center text-gray-200">Asset History 📈</h3>
               <div className="w-full h-[400px]">
                 <Bar data={barChartData} options={{
                   ...barChartOptions,

@@ -1,4 +1,3 @@
-import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
@@ -22,7 +21,7 @@ export const authOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          return null;
+          throw new Error("Missing credentials");
         }
 
         const user = await prisma.user.findUnique({
@@ -31,8 +30,8 @@ export const authOptions = {
           },
         });
 
-        if (!user) {
-          return null;
+        if (!user || !user.password) {
+          throw new Error("No user found");
         }
 
         const passwordMatch = await bcrypt.compare(
@@ -41,7 +40,7 @@ export const authOptions = {
         );
 
         if (!passwordMatch) {
-          return null;
+          throw new Error("Invalid password");
         }
 
         return user;
@@ -51,10 +50,18 @@ export const authOptions = {
   session: {
     strategy: "jwt",
   },
-  pages: {
-    signIn: "/auth/signin",
+  callbacks: {
+    async session({ session, token }) {
+      if (token?.sub) {
+        session.user.id = token.sub;
+      }
+      return session;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
   },
-};
-
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
+}; 

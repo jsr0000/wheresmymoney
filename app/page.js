@@ -30,24 +30,25 @@ export default function Home() {
     scrollToChartRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // State for inputs and chart data
+  // Add session hook at the top of your component
+  const { data: session } = useSession();
+  
+  // Initialize all your state variables
+  const greenColors = ["#2fe514", "#00813e", "#317a11", "#076438", "#a8f983"];
   const [inputs, setInputs] = useState([{ asset: "", quantity: "" }]);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [savedCharts, setSavedCharts] = useState([]); // Add this state
   const [chartData, setChartData] = useState({
     labels: [],
-    datasets: [
-      {
-        data: [],
-        backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"],
-        hoverBackgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"],
-        borderColor: "#fff",
-        borderWidth: 2,
-      },
-    ],
+    datasets: [{
+      data: [],
+      backgroundColor: greenColors,
+      borderColor: "#fff",
+      borderWidth: 2,
+    }]
   });
 
   // Define a consistent color palette at the top level
-  const greenColors = ["#2fe514", "#00813e", "#317a11", "#076438", "#a8f983"];
 
   // Create a consistent tooltip callback
   const tooltipCallback = {
@@ -269,15 +270,13 @@ export default function Home() {
     setInputs(updatedInputs);
   };
 
-  const { data: session } = useSession();
-
   useEffect(() => {
     const loadUserData = async () => {
       if (session) {
         try {
           const response = await fetch('/api/assets');
           const data = await response.json();
-          
+
           if (data.length > 0) {
             // Transform the data to match your state structure
             const transformedData = data.reduce((acc, asset) => {
@@ -306,94 +305,76 @@ export default function Home() {
     loadUserData();
   }, [session]);
 
-  const generateChartData = async () => {
-    const labels = inputs.map((input) => input.asset);
-    const data = inputs.map((input) => parseFloat(input.quantity) || 0);
-
-    // Calculate and update total before resetting inputs
-    const newTotal = data.reduce((sum, value) => sum + value, 0);
-    setTotalAmount(newTotal);
-
-    // Update pie chart data
-    setChartData({
-      labels,
-      datasets: [
-        {
-          data,
-          backgroundColor: greenColors,
-          hoverBackgroundColor: ["#dedede"],
-          borderColor: "#fff",
-          borderWidth: 2,
-        },
-      ],
-    });
-
-    // Add new data point to historical data
-    const timestamp = new Date().toLocaleDateString();
-    const newDataPoint = {
-      timestamp,
-      assets: inputs.map(input => ({
-        asset: input.asset,
-        quantity: parseFloat(input.quantity) || 0
-      }))
+  useEffect(() => {
+    const loadUserCharts = async () => {
+      if (session) {
+        try {
+          const response = await fetch('/api/charts');
+          const charts = await response.json();
+          console.log('Loaded charts:', charts);
+          setSavedCharts(charts);
+        } catch (error) {
+          console.error('Failed to load charts:', error);
+        }
+      }
     };
 
-    const updatedHistoricalData = [...historicalData, newDataPoint];
-    setHistoricalData(updatedHistoricalData);
+    loadUserCharts();
+  }, [session]);
 
-    // Create stacked bar chart data
-    const vibrantColors = [
-      "#00ff87",  // Bright mint
-      "#00b894",  // Sea green
-      "#55efc4",  // Light teal
-      "#00cec9",  // Turquoise
-      "#81ecec",  // Light cyan
-      "#74b9ff",  // Sky blue
-      "#32ff7e",  // Lime
-      "#7bed9f"   // Light green
-    ];
+  const generateChartData = async () => {
+    const validInputs = inputs.filter(input => input.asset && input.quantity);
+    if (validInputs.length === 0) return;
 
-    const assets = [...new Set(updatedHistoricalData.flatMap(data =>
-      data.assets.map(asset => asset.asset)
-    ))].filter(asset => asset); // Filter out empty asset names
+    const newTotal = validInputs.reduce((sum, input) => 
+      sum + (parseFloat(input.quantity) || 0), 0
+    );
 
-    const datasets = assets.map((assetName, index) => ({
-      label: assetName,
-      data: updatedHistoricalData.map(dataPoint => {
-        const asset = dataPoint.assets.find(a => a.asset === assetName);
-        return asset ? asset.quantity : 0;
-      }),
-      backgroundColor: greenColors[index % greenColors.length],
-    }));
-
-    setBarChartData({
-      labels: updatedHistoricalData.map(data => data.timestamp),
-      datasets
-    });
-
-    // Reset inputs without losing the total
-    setInputs([{ asset: "", quantity: "" }]);
-
-    handleScrollToChart();
+    const newChartData = {
+      labels: validInputs.map(input => input.asset),
+      datasets: [{
+        data: validInputs.map(input => parseFloat(input.quantity) || 0),
+        backgroundColor: greenColors,
+        borderColor: "#fff",
+        borderWidth: 2,
+      }]
+    };
 
     if (session) {
       try {
-        await fetch('/api/assets', {
+        const response = await fetch('/api/charts', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            assets: inputs.map(input => ({
-              asset: input.asset,
-              quantity: parseFloat(input.quantity) || 0
-            }))
+            name: `Assets ${new Date().toLocaleDateString()}`,
+            chartType: 'pie',
+            data: {
+              chartData: newChartData,
+              inputs: validInputs,
+              total: newTotal
+            }
           }),
         });
+
+        if (!response.ok) {
+          throw new Error('Failed to save chart');
+        }
+
+        // Refresh the charts list
+        const chartsResponse = await fetch('/api/charts');
+        const charts = await chartsResponse.json();
+        setSavedCharts(charts);
       } catch (error) {
-        console.error('Failed to save data:', error);
+        console.error('Failed to save chart:', error);
       }
     }
+
+    setChartData(newChartData);
+    setTotalAmount(newTotal);
+    setInputs([{ asset: "", quantity: "" }]);
+    handleScrollToChart();
   };
 
   return (
@@ -487,8 +468,63 @@ export default function Home() {
         </div>
       </div>
       {/* )} */}
+
+      {/* Saved Charts Section */}
+      {session && savedCharts.length > 0 && (
+        <div className="bg-[#232323] py-16">
+          <div className="max-w-7xl mx-auto px-6">
+            <h2 className="text-4xl font-bold text-center mb-12">
+              Your Saved Charts
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {savedCharts.map((chart) => (
+                <div key={chart.id} className="bg-[#2a2a2a] p-6 rounded-xl">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-semibold">{chart.name}</h3>
+                    <button
+                      onClick={() => deleteChart(chart.id)}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                  <div className="w-full aspect-square">
+                    <Pie 
+                      data={chart.data.chartData} 
+                      options={chartOptions} 
+                    />
+                  </div>
+                  <p className="mt-4 text-gray-400">
+                    Total: £{chart.data.total.toLocaleString()}
+                  </p>
+                  <p className="text-gray-400">
+                    Created: {new Date(chart.timestamp).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// Add the delete chart function
+const deleteChart = async (chartId) => {
+  if (!session) return;
+
+  try {
+    const response = await fetch(`/api/charts/${chartId}`, {
+      method: 'DELETE',
+    });
+
+    if (response.ok) {
+      setSavedCharts(savedCharts.filter(chart => chart.id !== chartId));
+    }
+  } catch (error) {
+    console.error('Failed to delete chart:', error);
+  }
+};
 
 

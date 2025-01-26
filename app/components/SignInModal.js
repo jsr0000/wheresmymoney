@@ -96,7 +96,7 @@ export default function SignInModal({ isOpen, onClose }) {
                             required
                         />
                     )}
-                    
+
                     <input
                         type="email"
                         placeholder="Email"
@@ -107,7 +107,7 @@ export default function SignInModal({ isOpen, onClose }) {
                         className="w-full bg-[#2a2a2a] border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
                         required
                     />
-                    
+
                     <input
                         type="password"
                         placeholder="Password"

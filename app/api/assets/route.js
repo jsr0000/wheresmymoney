@@ -22,20 +22,27 @@ export async function POST(request) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
-    const { assets } = await request.json();
+    try {
+        const { assets, timestamp } = await request.json();
+        const savedTimestamp = timestamp ? new Date(timestamp) : new Date();
 
-    const savedAssets = await Promise.all(
-        assets.map(asset =>
-            prisma.asset.create({
-                data: {
-                    name: asset.asset,
-                    quantity: asset.quantity,
-                    userId: session.user.id
-                }
-            })
-        )
-    );
+        const savedAssets = await Promise.all(
+            assets.map(asset =>
+                prisma.asset.create({
+                    data: {
+                        name: asset.asset,
+                        quantity: asset.quantity,
+                        userId: session.user.id,
+                        timestamp: savedTimestamp
+                    }
+                })
+            )
+        );
 
-    return new Response(JSON.stringify(savedAssets));
+        return new Response(JSON.stringify(savedAssets));
+    } catch (error) {
+        console.error('Error saving assets:', error);
+        return new Response(JSON.stringify({ error: "Failed to save assets" }), { status: 500 });
+    }
 }
 

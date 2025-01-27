@@ -10,7 +10,7 @@ export async function DELETE(request, { params }) {
 
     try {
         const { chartId } = params;
-        
+
         // Verify the chart belongs to the user
         const chart = await prisma.chart.findFirst({
             where: {
@@ -32,7 +32,7 @@ export async function DELETE(request, { params }) {
     } catch (error) {
         console.error('Error deleting chart:', error);
         return new Response(
-            JSON.stringify({ error: "Failed to delete chart" }), 
+            JSON.stringify({ error: "Failed to delete chart" }),
             { status: 500 }
         );
     }

@@ -20,9 +20,11 @@ model User {
   emailVerified DateTime?
   password      String?
   image         String?
-  charts        Chart[]   // Relation to charts
   accounts      Account[]
   sessions      Session[]
+  charts        Chart[]   // Relation to charts
+  assets        Asset[]   // Add relation to assets
+  inputs        Input[]   // Add relation to inputs
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -43,9 +45,9 @@ model Asset {
 model Input {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   userId    String   @db.ObjectId
+  chartId   String   @db.ObjectId
   asset     String
   quantity  Float
-  chartId   String   @db.ObjectId
   timestamp DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   chart     Chart    @relation(fields: [chartId], references: [id], onDelete: Cascade)
@@ -60,8 +62,12 @@ model Chart {
   name        String
   chartType   String   // "pie" or "bar"
   data        Json     // Store chart configuration and data
+  totalAmount Float
   timestamp   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inputs      Input[]  // Add relation to inputs
 
   @@index([userId])
 }
